@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    container_name: laravel_app
+    working_dir: /var/www/html
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8000:8000"
+    command: sh -c "composer install && php artisan serve --host=0.0.0.0 --port=8000"
+    environment:
+      - COMPOSER_ALLOW_SUPERUSER=1
+      - HOME=/tmp
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: laravel_db
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_USER=laravel
+      - MYSQL_PASSWORD=laravel
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  dbdata:
